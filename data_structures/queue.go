@@ -3,9 +3,11 @@ package gogenerics
 import (
 	"errors"
 	"fmt"
+	"sync"
 )
 
 type Queue[T any] struct {
+	m    sync.Mutex
 	data []T
 }
 
@@ -13,6 +15,8 @@ func (s *Queue[T]) Push(value T) {
 	if s == nil {
 		return
 	}
+	s.m.Lock()
+	defer s.m.Unlock()
 
 	s.data = append(s.data, value)
 }
@@ -21,6 +25,8 @@ func (s *Queue[T]) Pop() {
 	if s == nil {
 		return
 	}
+	s.m.Lock()
+	defer s.m.Unlock()
 
 	if s.IsEmpty() {
 		return
@@ -44,7 +50,10 @@ func (s Queue[T]) IsEmpty() bool {
 	return s.Length() == 0
 }
 
-func (s Queue[T]) Head() (T, error) {
+func (s *Queue[T]) Head() (T, error) {
+	s.m.Lock()
+	defer s.m.Unlock()
+
 	if s.IsEmpty() {
 		return *new(T), errors.New("Queue is empty")
 	}
@@ -52,7 +61,10 @@ func (s Queue[T]) Head() (T, error) {
 	return s.data[0], nil
 }
 
-func (s Queue[T]) Tail() (T, error) {
+func (s *Queue[T]) Tail() (T, error) {
+	s.m.Lock()
+	defer s.m.Unlock()
+
 	if s.IsEmpty() {
 		return *new(T), errors.New("Queue is empty")
 	}
@@ -60,13 +72,19 @@ func (s Queue[T]) Tail() (T, error) {
 	return s.data[s.Length()-1], nil
 }
 
-func (s Queue[T]) Print() {
+func (s *Queue[T]) Print() {
+	s.m.Lock()
+	defer s.m.Unlock()
+
 	for _, v := range s.data {
 		fmt.Println(v)
 	}
 }
 
 func (s *Queue[T]) Remove(t *T) {
+	s.m.Lock()
+	defer s.m.Unlock()
+
 	if t == nil {
 		return
 	}
@@ -104,6 +122,9 @@ func (s *Queue[T]) Remove(t *T) {
 }
 
 func (s *Queue[T]) IterateFront(handler func(t *T)) {
+	s.m.Lock()
+	defer s.m.Unlock()
+
 	for i := 0; i < len(s.data); i++ {
 		handler(&s.data[i])
 	}
